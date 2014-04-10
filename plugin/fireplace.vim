@@ -929,7 +929,8 @@ function! s:setup_eval() abort
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
 
   nmap <buffer> cp <Plug>FireplacePrint
-  nmap <buffer> cpp <Plug>FireplaceCountPrint
+  "nmap <buffer> cpp <Plug>FireplaceCountPrint
+  nmap <buffer> cpp cpab
 
   nmap <buffer> c! <Plug>FireplaceFilter
   nmap <buffer> c!! <Plug>FireplaceFilterab
