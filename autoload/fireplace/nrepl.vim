@@ -116,6 +116,9 @@ function! s:nrepl_eval(expr, ...) dict abort
   elseif has_key(self, 'ns')
     let msg.ns = self.ns
   endif
+  if has_key(options, 'eval')
+    let msg.eval = options.eval
+  endif
   if has_key(options, 'session')
     let msg.session = options.session
   endif

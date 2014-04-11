@@ -6,6 +6,8 @@ if exists("g:loaded_fireplace") || v:version < 700 || &cp
 endif
 let g:loaded_fireplace = 1
 
+let g:fireplace_core_ns = {'clj': 'clojure.core', 'cljs': 'clojure.core', 'eclj': 'eclj.core'}
+
 " File type {{{1
 
 augroup fireplace_file_type
@@ -353,14 +355,14 @@ function! s:spawning_eval(classpath, expr, ns) abort
   let java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
   let command = java_cmd.' -cp '.shellescape(a:classpath).' clojure.main -e ' .
         \ shellescape(
-        \   '(clojure.core/binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
+        \   '('.g:fireplace_core_ns[expand('%:e')].'/binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '                       *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
-        \   '    (clojure.core/require ''clojure.repl) '.ns.'(clojure.core/spit '.s:str(s:oneoff_pr).' (clojure.core/pr-str (clojure.core/eval (clojure.core/read-string (clojure.core/slurp '.s:str(s:oneoff_in).')))))' .
+        \   '    ('.g:fireplace_core_ns[expand('%:e')].'/require ''clojure.repl) '.ns.'('.g:fireplace_core_ns[expand('%:e')].'/spit '.s:str(s:oneoff_pr).' ('.g:fireplace_core_ns[expand('%:e')].'/pr-str ('.g:fireplace_core_ns[expand('%:e')].'/eval ('.g:fireplace_core_ns[expand('%:e')].'/read-string ('.g:fireplace_core_ns[expand('%:e')].'/slurp '.s:str(s:oneoff_in).')))))' .
         \   '    (catch Exception e' .
-        \   '      (clojure.core/spit *err* (.toString e))' .
-        \   '      (clojure.core/spit '.s:str(s:oneoff_ex).' (clojure.core/class e))' .
-        \   '      (clojure.core/spit '.s:str(s:oneoff_stk).' (clojure.core/apply clojure.core/str (clojure.core/interpose "\n" (.getStackTrace e))))))' .
+        \   '      ('.g:fireplace_core_ns[expand('%:e')].'/spit *err* (.toString e))' .
+        \   '      ('.g:fireplace_core_ns[expand('%:e')].'/spit '.s:str(s:oneoff_ex).' ('.g:fireplace_core_ns[expand('%:e')].'/class e))' .
+        \   '      ('.g:fireplace_core_ns[expand('%:e')].'/spit '.s:str(s:oneoff_stk).' ('.g:fireplace_core_ns[expand('%:e')].'/apply '.g:fireplace_core_ns[expand('%:e')].'/str ('.g:fireplace_core_ns[expand('%:e')].'/interpose "\n" (.getStackTrace e))))))' .
         \   '  nil)')
   let captured = system(command)
   let result = {}
@@ -603,7 +605,9 @@ function! s:qfhistory() abort
 endfunction
 
 function! fireplace#session_eval(expr, ...) abort
-  let response = s:eval(a:expr, a:0 ? a:1 : {})
+  let options = a:0 ? a:1 : {}
+  let options.eval = g:fireplace_core_ns[expand('%:e')].'/eval'
+  let response = s:eval(a:expr, options)
 
   if !empty(get(response, 'value', '')) || !empty(get(response, 'err', ''))
     call insert(s:history, {'buffer': bufnr(''), 'code': a:expr, 'ns': fireplace#ns(), 'response': response})
@@ -732,7 +736,7 @@ function! s:macroexpandop(type) abort
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("clojure.core/macroexpand-1", s:opfunc(a:type))
+  call fireplace#macroexpand(g:fireplace_core_ns[expand('%:e')]."/macroexpand-1", s:opfunc(a:type))
 endfunction
 
 function! s:printop(type) abort
@@ -979,7 +983,7 @@ function! s:Require(bang, ns) abort
   if expand('%:e') ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
-    let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+    let cmd = ('('.g:fireplace_core_ns[expand('%:e')].'/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
   echo cmd
   try
@@ -1158,7 +1162,7 @@ endfunction
 function! s:Lookup(ns, macro, arg) abort
   " doc is in clojure.core in older Clojure versions
   try
-    call fireplace#session_eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
+    call fireplace#session_eval("(".g:fireplace_core_ns[expand('%:e')]."/require '".a:ns.") (".g:fireplace_core_ns[expand('%:e')]."/eval (".g:fireplace_core_ns[expand('%:e')]."/list (if (ns-resolve '".g:fireplace_core_ns[expand('%:e')]." '".a:macro.") '".g:fireplace_core_ns[expand('%:e')]."/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
   catch /^Clojure:/
   catch /.*/
     echohl ErrorMSG
