@@ -178,7 +178,7 @@ function! s:repl.preload(lib) dict abort
     let self.requires[a:lib] = 0
     let clone = s:conn_try(self.connection, 'clone')
     try
-      let result = clone.eval('(ns '.self.user_ns().' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
+      let result = clone.eval('(do (require (quote '.g:fireplace_core_ns[expand('%:e')].')) (in-ns (quote '.self.user_ns().')) ('.g:fireplace_core_ns[expand('%:e')].'/require (quote '.a:lib.reload.')))', {'ns': self.user_ns()})
     finally
       call clone.close()
     endtry
